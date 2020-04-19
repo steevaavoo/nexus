@@ -1,0 +1,160 @@
+# https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions
+name: Build environment
+
+# name of GitHub event that triggers workflow
+# https://help.github.com/en/actions/reference/events-that-trigger-workflows#watch-event-watch
+on:
+  # trigger when I star my own repo
+  watch:
+    types: [started]
+  # trigger via webhook
+  # https://github.com/adamrushuk/aks-nexus-velero/blob/master/TriggerCustomAction.ps1#L28
+  repository_dispatch:
+    types: [build]
+
+# global environment variables
+# https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
+env:
+  # prefix: used for some globally unique name requirements
+  PREFIX: baker
+
+  # debug
+  CI_DEBUG: true
+
+  # api
+  API_KEY: ${{ secrets.API_KEY }}
+  API_SECRET: ${{ secrets.API_SECRET }}
+
+  # azure creds
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+  # other
+  # prod or staging
+  CERT_API_ENVIRONMENT: staging
+  DNS_DOMAIN_NAME: nexus.bakers-foundry.co.uk
+  DOCKER_FQDN: docker-nexus.bakers-foundry.co.uk
+  DEMO_USER_USERNAME: demo_user
+  # DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}
+  EMAIL_ADDRESS: steevaavoo+nexusssl@gmail.com
+  ENABLE_TLS_INGRESS: true
+  FORCE_TEST_FAIL: false
+  HAS_SUBDOMAIN: true
+  LOCATION: uksouth
+  # STORAGE_KEY: 'env var set by Get-StorageKey.ps1'
+
+  # terraform
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_VERSION: "0.12.24" # "latest" is supported
+  TF_WORKING_DIR: terraform
+
+  # Env var concatenation is currently not supported at Workflow or Job scope. See workaround below:
+  # https://github.community/t5/GitHub-Actions/How-can-we-concatenate-multiple-env-vars-at-workflow-and-job/td-p/48489
+
+jobs:
+  build:
+
+    # always pin versions
+    # view installed software: https://help.github.com/en/actions/reference/software-installed-on-github-hosted-runners
+    runs-on: ubuntu-18.04
+
+    # only run if owner triggered action by starring the repo (otherwise anyone could trigger a build by starring)
+    if: github.actor == github.event.repository.owner.login
+
+    steps:
+
+    # Checkout
+    # https://github.com/marketplace/actions/checkout
+    - uses: actions/checkout@v2
+      # specify different branch
+      # NOT required as I've changed the default branch to develop
+      # with:
+      #   ref: develop
+
+    # Init tasks - inc Env var concatenation
+    # https://github.community/t5/GitHub-Actions/How-can-we-concatenate-multiple-env-vars-at-workflow-and-job/td-p/48489
+    - name: Init tasks - inc Env var concatenation (Workaround)
+      run: |
+        chmod -R +x ./scripts/
+        echo ::set-env name=AKS_RG_NAME::${{ env.PREFIX }}-rg-aks-dev-001
+        echo ::set-env name=AKS_CLUSTER_NAME::${{ env.PREFIX }}-aks-001
+        echo ::set-env name=TERRAFORM_STORAGE_ACCOUNT::${{ env.PREFIX }}sttfstate${{ env.LOCATION }}001
+        echo ::set-env name=TERRAFORM_STORAGE_RG::${{ env.PREFIX }}-rg-tfstate-dev-001
+        # echo ::set-env name=VELERO_STORAGE_RG::${{ env.PREFIX }}-rg-velero-dev-001
+        # echo ::set-env name=VELERO_STORAGE_ACCOUNT::${{ env.PREFIX }}stbckuksouth001
+
+    # Show event info
+    - name: Show triggered event data
+      run: pwsh -command "./scripts/Get-EventData.ps1"
+
+    # Login
+    - name: Login to Azure
+      run: pwsh -command "./scripts/Login-Azure.ps1"
+
+
+    # Prereqs
+    - name: Create Storage Account for Terraform state
+      run: pwsh -command "./scripts/Create-AzStorage.ps1"
+
+    # - name: Lookup Storage Key
+    #   run: pwsh -command "./scripts/Get-StorageKey.ps1"
+
+    # - name: Replace tokens in Terraform config files
+    #   run: pwsh -command "./scripts/Replace-Tokens.ps1"
+
+
+    # # Terraform
+    # - name: Terraform Init
+    #   run: pwsh -command "./scripts/Invoke-Terraform.ps1 -Command 'init'"
+
+    # - name: Terraform Plan
+    #   run: pwsh -command "./scripts/Plan-Terraform.ps1"
+    #   env:
+    #     # https://www.terraform.io/docs/configuration/variables.html#environment-variables
+    #     TF_VAR_credentials_velero: ${{ secrets.CREDENTIALS_VELERO }}
+
+    # - name: Terraform Apply
+    #   run: pwsh -command "./scripts/Apply-Terraform.ps1"
+
+
+    # # Kubernetes
+    # - name: Deploy kubernetes manifests
+    #   run: pwsh -command "./scripts/Deploy-Manifests.ps1"
+
+    # - name: Wait for resources to be "Ready"
+    #   run: ./scripts/wait.sh
+
+
+    # # Ansible
+    # - name: Run Ansible playbook
+    #   run: ./scripts/ansible.sh
+    #   env:
+    #     NEXUS_ADMIN_PASSWORD: ${{ secrets.NEXUS_ADMIN_PASSWORD }}
+    #     DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}
+
+
+    # # Docker
+    # - name: Docker repo login
+    #   uses: Azure/docker-login@v1
+    #   with:
+    #     login-server: ${{ env.DOCKER_FQDN }}
+    #     username: ${{ env.DEMO_USER_USERNAME }}
+    #     password: ${{ secrets.DEMO_USER_PASSWORD }}
+
+    # - name: Push images to Docker repo
+    #   run: ./scripts/push_docker_images.sh
+
+
+    # # Pester tests
+    # - name: Run Pester tests
+    #   run: pwsh -command "./scripts/Start-Test.ps1"
+
+    # - name: Archive test artifacts
+    #   if: always()
+    #   uses: actions/upload-artifact@v1
+    #   with:
+    #     name: test results
+    #     path: test/pester-test-results-junit.xml
