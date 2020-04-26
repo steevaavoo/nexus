@@ -34,24 +34,24 @@ variable "tags" {
 
   default = {
     Env    = "Dev"
-    Owner  = "Adam Rush"
+    Owner  = "Steve Baker"
     Source = "terraform"
   }
 }
 
 
-# ACR
-variable "container_registry_name" {
-  default = "__ACR_NAME__"
-}
+# # ACR
+# variable "container_registry_name" {
+#   default = "__ACR_NAME__"
+# }
 
-variable "acr_admin_enabled" {
-  default = false
-}
+# variable "acr_admin_enabled" {
+#   default = false
+# }
 
-variable "acr_sku" {
-  default = "Basic"
-}
+# variable "acr_sku" {
+#   default = "Basic"
+# }
 
 
 # AKS
@@ -69,13 +69,13 @@ variable "enable_aks_dashboard" {
 }
 
 # Service Principle for AKS
-variable "service_principal_client_id" {
-  default = "__ARM_CLIENT_ID__"
-}
+# variable "service_principal_client_id" {
+#   default = "__ARM_CLIENT_ID__"
+# }
 
-variable "service_principal_client_secret" {
-  default = "__ARM_CLIENT_SECRET__"
-}
+# variable "service_principal_client_secret" {
+#   default = "__ARM_CLIENT_SECRET__"
+# }
 
 # Agent Pool
 variable "agent_pool_node_count" {
