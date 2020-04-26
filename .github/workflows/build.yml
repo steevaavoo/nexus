@@ -109,8 +109,20 @@ jobs:
 
 
     # Terraform
+    # https://github.com/hashicorp/terraform-github-actions#usage
     - name: Terraform Init
-      run: pwsh -command "./scripts/Invoke-Terraform.ps1 -Command 'init'"
+      uses: hashicorp/terraform-github-actions@v0.8.0
+      with:
+        tf_actions_subcommand: init
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_working_dir: ${{ env.TF_WORKING_DIR }}
+
+    - name: Terraform Validate
+      uses: hashicorp/terraform-github-actions@v0.8.0
+      with:
+        tf_actions_subcommand: validate
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_working_dir: ${{ env.TF_WORKING_DIR }}
 
     - name: Terraform Plan
       run: pwsh -command "./scripts/Plan-Terraform.ps1"
