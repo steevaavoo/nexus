@@ -18,20 +18,20 @@ resource "azurerm_resource_group" "aks" {
 
 
 # ACR
-resource "azurerm_container_registry" "aks" {
-  name                = var.container_registry_name
-  resource_group_name = azurerm_resource_group.aks.name
-  location            = azurerm_resource_group.aks.location
-  admin_enabled       = var.acr_admin_enabled
-  sku                 = var.acr_sku
-  tags                = var.tags
+# resource "azurerm_container_registry" "aks" {
+#   name                = var.container_registry_name
+#   resource_group_name = azurerm_resource_group.aks.name
+#   location            = azurerm_resource_group.aks.location
+#   admin_enabled       = var.acr_admin_enabled
+#   sku                 = var.acr_sku
+#   tags                = var.tags
 
-  lifecycle {
-    ignore_changes = [
-      tags
-    ]
-  }
-}
+#   lifecycle {
+#     ignore_changes = [
+#       tags
+#     ]
+#   }
+# }
 
 
 # Log Analytics
