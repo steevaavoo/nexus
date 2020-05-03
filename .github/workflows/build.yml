@@ -102,7 +102,7 @@ jobs:
       run: pwsh -command "./scripts/Create-AzStorage.ps1"
 
     - name: Lookup Storage Key
-      run: pwsh -command "./scripts/Get-StorageKey.ps1"
+      run: ./scripts/get_storagekey.sh
 
     - name: Replace tokens in Terraform config files
       run: pwsh -command "./scripts/Replace-Tokens.ps1"
